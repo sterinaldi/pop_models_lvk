@@ -1,0 +1,47 @@
+[build-system]
+requires = [
+    "oldest-supported-numpy",
+    "setuptools>=42",
+    "wheel",
+    "build",
+    ]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ['population_models']
+
+[project]
+name = 'pop_models_lvk'
+description = 'Implementation of some LVK population models'
+version = '0.1.0'
+requires-python = '< 3.12'
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+keywords = ['population', 'BBH', 'gravitational waves', 'LVK']
+authors = [
+  {name = "Stefano Rinaldi", email = "stefano.rinaldi@uni-heidelberg.de"},
+  ]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  'Topic :: Scientific/Engineering :: Astronomy',
+  'Topic :: Scientific/Engineering :: Physics',
+]
+
+dependencies = [
+    "numpy > 1.22",
+    "numba",
+    ]
+
+[project.urls]
+Repository = "https://github.com/sterinaldi/pop_models_lvk.git"
+Issues = "https://github.com/sterinaldi/pop_models_lvk/issues"
