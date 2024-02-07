@@ -23,11 +23,11 @@ def _powerlaw_smoothed_unnorm(m, alpha, mmax, mmin, delta):
     return powerlaw_truncated(m, alpha, mmin, mmax)*smoothing(m, mmin, delta)
     
 @njit
-def powerlaw_smoothed(m, alpha, mmin, mmax, delta):
+def powerlaw_smoothed(m, alpha, mmax, mmin, delta):
     x  = np.linspace(mmin, mmax, 1000)
     dx = x[1]-x[0]
-    n  = np.sum(_powerlaw_smoothed_unnorm(x, alpha, mmin, mmax, delta)*dx)
-    return _powerlaw_smoothed_unnorm(m, alpha, mmin, mmax, delta)/n
+    n  = np.sum(_powerlaw_smoothed_unnorm(x, alpha, mmax, mmin, delta)*dx)
+    return _powerlaw_smoothed_unnorm(m, alpha, mmax, mmin, delta)/n
 
 @njit
 def peak(m, mu, sigma):
@@ -46,4 +46,4 @@ def peak_smoothed(m, mu, sigma, mmin, delta, mmax = 100.):
 
 @njit
 def plpeak(m, alpha, mmin, mmax, delta, mu, sigma, weight):
-    return (1.-weight)*powerlaw(m, alpha, mmin, mmax, delta) + weight*smoothed_peak(m, mu, sigma)
+    return (1.-weight)*powerlaw_smoothed(m, alpha, mmax, mmin, delta) + weight*peak_smoothed(m, mu, sigma, mmin, delta)
