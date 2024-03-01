@@ -87,3 +87,8 @@ def powerlaw_massratio(q, m1, beta, mmin, delta):
     m1 = np.atleast_1d(m1)
     q  = np.atleast_1d(q)
     return _powerlaw_massratio_unnorm(q, m1, beta, mmin, delta).flatten()
+
+# LVK
+
+def plpeak_lvk(m, alpha, mmin, mmax, delta, mu, sigma, weight):
+    return ((1.-weight)*powerlaw_truncated(m, alpha, mmin, mmax) + weight*peak(m, mu, sigma))*smoothing(m, mmin, delta)
