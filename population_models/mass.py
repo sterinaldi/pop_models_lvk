@@ -76,7 +76,7 @@ def _powerlaw_massratio_for_normalisation(q, m1, beta, mmin, delta):
 
 @njit
 def _powerlaw_massratio_unnorm(q, m1, beta, mmin, delta):
-    return powerlaw_massratio_truncated(q, beta)*smoothing_float(m1*q, mmin, delta)
+    return powerlaw_massratio_truncated(q, beta)*smoothing(m1*q, mmin, delta)
 
 @njit
 def _powerlaw_massratio(q, m1, beta, mmin, delta):
@@ -86,7 +86,4 @@ def _powerlaw_massratio(q, m1, beta, mmin, delta):
 def powerlaw_massratio(q, m1, beta, mmin, delta):
     m1 = np.atleast_1d(m1)
     q  = np.atleast_1d(q)
-    if len(m1) == 1:
-        return np.array([_powerlaw_massratio_unnorm(q[i], m1[0], beta, mmin, delta) for i in range(len(q))]).flatten()
-    else:
-        return np.array([_powerlaw_massratio_unnorm(q[i], m1[i], beta, mmin, delta) for i in range(len(q))]).flatten()
+    return _powerlaw_massratio_unnorm(q, m1, beta, mmin, delta).flatten()
