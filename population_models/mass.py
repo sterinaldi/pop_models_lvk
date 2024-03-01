@@ -12,6 +12,19 @@ def smoothing(m, mmin, delta):
     return p
 
 @njit
+def smoothing_float(m, mmin, delta):
+    if m > mmin + delta:
+        p = 1.
+    elif m < mmin:
+        p = 0.
+    else:
+        shifted_mass = (m - mmin) / delta
+        exponent     = 1. / shifted_mass - 1. / (1. - shifted_mass)
+        p            = 1./(1.+np.exp(exponent))
+    return p
+
+# Primary mass
+@njit
 def powerlaw_truncated(m, alpha, mmin, mmax):
     p = m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha))
     p[m < mmin] = 0.
@@ -47,3 +60,33 @@ def peak_smoothed(m, mu, sigma, mmin, delta, mmax = 100.):
 @njit
 def plpeak(m, alpha, mmin, mmax, delta, mu, sigma, weight):
     return (1.-weight)*powerlaw_smoothed(m, alpha, mmax, mmin, delta) + weight*peak_smoothed(m, mu, sigma, mmin, delta)
+
+# mass ratio
+q_norm = np.linspace(0,1,1001)[1:]
+dq     = q_norm[1]-q_norm[0]
+
+# Primary mass
+@njit
+def powerlaw_massratio_truncated(q, beta):
+    return q**beta * (beta+1.)
+
+@njit
+def _powerlaw_massratio_for_normalisation(q, m1, beta, mmin, delta):
+    return powerlaw_massratio_truncated(q, beta)*smoothing(m1*q, mmin, delta)
+
+@njit
+def _powerlaw_massratio_unnorm(q, m1, beta, mmin, delta):
+    return powerlaw_massratio_truncated(q, beta)*smoothing_float(m1*q, mmin, delta)
+
+@njit
+def _powerlaw_massratio(q, m1, beta, mmin, delta):
+    norm = np.sum(_powerlaw_massratio_for_normalisation(q_norm, m1, beta, mmin, delta)*dq)
+    return _powerlaw_massratio_unnorm(q, m1, beta, mmin, delta)/norm
+
+def powerlaw_massratio(q, m1, beta, mmin, delta):
+    m1 = np.atleast_1d(m1)
+    q  = np.atleast_1d(q)
+    if len(m1) == 1:
+        return np.array([_powerlaw_massratio_unnorm(q[i], m1[0], beta, mmin, delta) for i in range(len(q))]).flatten()
+    else:
+        return np.array([_powerlaw_massratio_unnorm(q[i], m1[i], beta, mmin, delta) for i in range(len(q))]).flatten()
