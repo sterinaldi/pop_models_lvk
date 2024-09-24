@@ -112,7 +112,19 @@ grid_m = np.copy(grid[:,0]).flatten()
 grid_q = np.copy(grid[:,1]).flatten()
 
 @njit
-def plpeak_pl_lvk(m, q, alpha, mmin, mmax, delta, mu, sigma, weight, beta):
+def plpeak_pl(m, q, alpha, mmin, mmax, delta, mu, sigma, weight, beta):
     p_norm = _plpeak_lvk_unnorm(grid_m, alpha, mmin, mmax, delta, mu, sigma, weight)*_powerlaw_massratio_unnorm(grid_q, grid_m, beta, mmin, delta)
     norm = np.sum(p_norm)*dgrid
     return _plpeak_lvk_unnorm(m, alpha, mmin, mmax, delta, mu, sigma, weight)*_powerlaw_massratio_unnorm(q, m, beta, mmin, delta)/norm
+
+@njit
+def pl_pl(m, q, alpha, mmin, mmax, delta, beta):
+    p_norm = _powerlaw_smoothed_unnorm(grid_m, alpha, mmax, mmin, delta)*_powerlaw_massratio_unnorm(grid_q, grid_m, beta, mmin, delta)
+    norm = np.sum(p_norm)*dgrid
+    return _powerlaw_smoothed_unnorm(m, alpha, mmax, mmin, delta)*_powerlaw_massratio_unnorm(q, m, beta, mmin, delta)/norm
+
+@njit
+def peak_pl(m, q, mu, sigma, mmin, delta, beta):
+    p_norm = _peak_smoothed_unnorm(grid_m, mu, sigma, mmin, delta)*_powerlaw_massratio_unnorm(grid_q, grid_m, beta, mmin, delta)
+    norm = np.sum(p_norm)*dgrid
+    return _peak_smoothed_unnorm(m, mu, sigma, mmin, delta)*_powerlaw_massratio_unnorm(q, m, beta, mmin, delta)/norm
