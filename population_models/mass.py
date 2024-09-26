@@ -146,7 +146,7 @@ def plpeak_pl(m, q, alpha, mmin, mmax, delta, mu, sigma, weight, beta):
                  'beta': beta,
                  }
     dataset = {'mass_1': m, 'mass_ratio': q}
-    return plpeak_instance(dataset, **pars_dict)
+    return np.nan_to_num(plpeak_instance(dataset, **pars_dict), nan = -np.inf, posinf = -np.inf)
 
 def pl_pl(m, q, alpha, mmin, mmax, delta, beta):
     pars_dict = {'alpha': alpha,
