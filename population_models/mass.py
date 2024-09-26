@@ -65,7 +65,7 @@ def plpeak(m, alpha, mmin, mmax, delta, mu, sigma, weight):
     return (1.-weight)*powerlaw_smoothed(m, alpha, mmax, mmin, delta) + weight*peak_smoothed(m, mu, sigma, mmin, delta)
 
 # mass ratio
-q_norm = np.linspace(0,1,1001)[1:]
+q_norm = np.linspace(0,1,101)[1:]
 dq     = q_norm[1]-q_norm[0]
 
 # Primary mass
@@ -105,26 +105,65 @@ def plpeak_lvk(m, alpha, mmin, mmax, delta, mu, sigma, weight):
     n  = np.sum(_plpeak_lvk_unnorm(x, alpha, mmin, mmax, delta, mu, sigma, weight)*dx)
     return _plpeak_lvk_unnorm(m, alpha, mmin, mmax, delta, mu, sigma, weight)/n
 
-# Joint mass and mass ratio
-grid, dgrid = recursive_grid([[1.001,100],[0.0101,1]], [100,100])
-dgrid = np.prod(dgrid)
-grid_m = np.copy(grid[:,0]).flatten()
-grid_q = np.copy(grid[:,1]).flatten()
+from gwpopulation.models.mass import BaseSmoothedMassDistribution, two_component_single, power_law_mass
+from gwpopulation.utils import truncnorm
 
-@njit
+def single_peak(mass, mmin, mpp, sigpp, gaussian_mass_maximum=100):
+    return truncnorm(mass, mu=mpp, sigma=sigpp, high=gaussian_mass_maximum, low=mmin)
+
+class PowerLaw(BaseSmoothedMassDistribution):
+    primary_model = power_law_mass
+
+class SinglePeak(BaseSmoothedMassDistribution):
+    primary_model = single_peak
+    
+    @property
+    def kwargs(self):
+        return dict(gaussian_mass_maximum = self.mmax)
+
+class PLPeak(BaseSmoothedMassDistribution):
+    primary_model = two_component_single
+    
+    @property
+    def kwargs(self):
+        return dict(gaussian_mass_maximum = self.mmax)
+
+pl_instance     = PowerLaw()
+peak_instance   = SinglePeak()
+plpeak_instance = PLPeak()
+
 def plpeak_pl(m, q, alpha, mmin, mmax, delta, mu, sigma, weight, beta):
-    p_norm = _plpeak_lvk_unnorm(grid_m, alpha, mmin, mmax, delta, mu, sigma, weight)*_powerlaw_massratio_unnorm(grid_q, grid_m, beta, mmin, delta)
-    norm = np.sum(p_norm)*dgrid
-    return _plpeak_lvk_unnorm(m, alpha, mmin, mmax, delta, mu, sigma, weight)*_powerlaw_massratio_unnorm(q, m, beta, mmin, delta)/norm
+    """
+    Wrapper for the model implemented in GWPopulation
+    """
+    pars_dict = {'alpha': alpha,
+                 'mmin': mmin,
+                 'mmax': mmax,
+                 'delta_m': delta,
+                 'mpp': mu,
+                 'sigpp': sigma,
+                 'lam': weight,
+                 'beta': beta,
+                 }
+    dataset = {'mass_1': m, 'mass_ratio': q}
+    return plpeak_instance(dataset, **pars_dict)
 
-@njit
 def pl_pl(m, q, alpha, mmin, mmax, delta, beta):
-    p_norm = _powerlaw_smoothed_unnorm(grid_m, alpha, mmax, mmin, delta)*_powerlaw_massratio_unnorm(grid_q, grid_m, beta, mmin, delta)
-    norm = np.sum(p_norm)*dgrid
-    return _powerlaw_smoothed_unnorm(m, alpha, mmax, mmin, delta)*_powerlaw_massratio_unnorm(q, m, beta, mmin, delta)/norm
+    pars_dict = {'alpha': alpha,
+                 'mmin': mmin,
+                 'mmax': mmax,
+                 'delta_m': delta,
+                 'beta': beta,
+                 }
+    dataset = {'mass_1': m, 'mass_ratio': q}
+    return pl_instance(dataset, **pars_dict)
 
-@njit
 def peak_pl(m, q, mu, sigma, mmin, delta, beta):
-    p_norm = _peak_smoothed_unnorm(grid_m, mu, sigma, mmin, delta)*_powerlaw_massratio_unnorm(grid_q, grid_m, beta, mmin, delta)
-    norm = np.sum(p_norm)*dgrid
-    return _peak_smoothed_unnorm(m, mu, sigma, mmin, delta)*_powerlaw_massratio_unnorm(q, m, beta, mmin, delta)/norm
+    pars_dict = {'mmin': mmin,
+                 'delta_m': delta,
+                 'mpp': mu,
+                 'sigpp': sigma,
+                 'beta': beta,
+                 }
+    dataset = {'mass_1': m, 'mass_ratio': q}
+    return peak_instance(dataset, **pars_dict)
