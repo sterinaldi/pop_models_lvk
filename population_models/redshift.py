@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-from figaro.cosmology import dVdz_approx_planck18 as approx
+from figaro.cosmology import dVdz_approx_planck15 as approx
 
 zmax   = 2.3 # LVK paper
 z_norm = np.linspace(0,zmax,1000)
