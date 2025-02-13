@@ -5,11 +5,10 @@ from figaro.utils import recursive_grid
 
 @njit
 def smoothing(m, mmin, delta):
-    p            = np.zeros(m.shape, dtype = np.float64)
-    idx          = (m > mmin) & (m < mmin + delta)
-    shifted_mass = (m[idx] - mmin) / delta
+    idx          = (m > mmin)
+    shifted_mass = (m - mmin) / delta
     exponent     = 1. / shifted_mass - 1. / (1. - shifted_mass)
-    p[idx]       = 1./(1.+np.exp(exponent))
+    p       = 1./(1.+np.exp(exponent))*idx
     p[m >= mmin + delta] = 1.
     return p
 
@@ -28,8 +27,7 @@ def smoothing_float(m, mmin, delta):
 # Primary mass
 @njit
 def powerlaw_truncated(m, alpha, mmin, mmax):
-    p = m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha))
-    p[(m < mmin) | (m > mmax)] = 0.
+    p = np.where((m < mmin) | (m > mmax), 0, m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha)))
     return p
 
 @njit
@@ -50,19 +48,19 @@ def peak(m, mu, sigma, mmin, mmax = 100.):
     return p/(erf((mmax-mu)/(sigma*np.sqrt(2))) - erf((mmin-mu)/(sigma*np.sqrt(2))))*2.
 
 @njit
-def _peak_smoothed_unnorm(m, mu, sigma, mmin, delta):
-    return peak(m, mu, sigma, mmin)*smoothing(m, mmin, delta)
+def _peak_smoothed_unnorm(m, mu, sigma, mmin, delta, mmax = 100.):
+    return peak(m, mu, sigma, mmin, mmax)*smoothing(m, mmin, delta)
 
 @njit
 def peak_smoothed(m, mu, sigma, mmin, delta, mmax = 100.):
     x  = np.linspace(mmin, mmax, 1000)
     dx = x[1]-x[0]
-    n  = np.sum(_peak_smoothed_unnorm(x, mu, sigma, mmin, delta)*dx)
-    return _peak_smoothed_unnorm(m.flatten(), mu, sigma, mmin, delta)/n
+    n  = np.sum(_peak_smoothed_unnorm(x, mu, sigma, mmin, delta, mmax)*dx)
+    return _peak_smoothed_unnorm(m.flatten(), mu, sigma, mmin, delta, mmax)/n
 
 @njit
 def plpeak(m, alpha, mmin, mmax, delta, mu, sigma, weight):
-    return (1.-weight)*powerlaw_smoothed(m, alpha, mmax, mmin, delta) + weight*peak_smoothed(m, mu, sigma, mmin, delta)
+    return (1.-weight)*powerlaw_smoothed(m, alpha, mmax, mmin, delta) + weight*peak_smoothed(m, mu, sigma, mmin, delta, mmax)
 
 # mass ratio
 q_norm = np.linspace(0,1,1001)[1:]
@@ -71,8 +69,7 @@ dq     = q_norm[1]-q_norm[0]
 # Primary mass
 @njit
 def powerlaw_massratio_truncated(q, m1, beta, mmin):
-    p = q**beta * (beta+1.) / (1. - (mmin/m1)**(beta+1))
-    p[(m1 < mmin) | (q < mmin/m1)] = 0.
+    p = np.where((m1 < mmin) | (q < mmin/m1), 0, q**beta * (beta+1.) / (1. - (mmin/m1)**(beta+1)))
     return p
 
 @njit
@@ -95,7 +92,7 @@ def powerlaw_massratio(q, m1, beta, mmin, delta):
 # LVK
 @njit
 def _plpeak_lvk_unnorm(m, alpha, mmin, mmax, delta, mu, sigma, weight):
-    return ((1.-weight)*powerlaw_truncated(m, alpha, mmin, mmax) + weight*peak(m, mu, sigma, mmin))*smoothing(m, mmin, delta)
+    return ((1.-weight)*powerlaw_truncated(m, alpha, mmin, mmax) + weight*peak(m, mu, sigma, mmin, mmax))*smoothing(m, mmin, delta)
 
 # LVK
 @njit
