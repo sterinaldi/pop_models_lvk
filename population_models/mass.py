@@ -95,8 +95,8 @@ def _plpeak_lvk_unnorm(m, alpha, mmin, mmax, delta, mu, sigma, weight):
     return ((1.-weight)*powerlaw_truncated(m, alpha, mmin, mmax) + weight*peak(m, mu, sigma, mmin))*smoothing(m, mmin, delta)
 
 @njit
-def _plpeak_lvk_np2p(m, alpha, mmin, mmax, delta, mu, log10_sigma, log10_weight):
-    return ((1.-(10**log10_weight))*powerlaw_truncated(m, alpha, mmin, mmax) + (10**log10_weight)*peak(m, mu, 10**log10_sigma, mmin, mmax))*smoothing(m, mmin, delta)
+def _plpeak_lvk_np2p(m, alpha, mmin, mmax, delta, mu, sigma, log10_w):
+    return ((1.- (10**log10_w))*powerlaw_truncated(m, alpha, mmin, mmax) + (10**log10_w)*peak(m, mu, sigma, mmin, 100.))*smoothing(m, mmin, delta)
 
 # LVK
 @njit
