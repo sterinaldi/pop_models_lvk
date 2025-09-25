@@ -27,8 +27,27 @@ def smoothing_float(m, mmin, delta):
 # Primary mass
 @njit
 def powerlaw_truncated(m, alpha, mmin, mmax):
-    p = np.where((m < mmin) | (m > mmax), 0, m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha)))
+    p = np.where((m < mmin) | (m > mmax), 1e-7, m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha)))
     return p
+
+@njit
+def broken_powerlaw(m, alpha1, alpha2, mbreak, mmin, mmax):
+    nn = (mmax*(mmax/mbreak)**(-alpha2) - mbreak)/(1-alpha2) + (mmax*(mmax/mbreak)**(-alpha1) - mbreak)/(1-alpha1)
+#    p  = np.where((m < mmin) | (m > mmax), 1e-7, np.where(m < mbreak, (m/mbreak)**(-alpha1), (m/mbreak)**(-alpha2)))
+    p  = np.where(m < mbreak, (m/mbreak)**(-alpha1), (m/mbreak)**(-alpha2))
+    return p/nn
+
+@njit
+def _broken_powerlaw_smoothed_unnorm(m, alpha1, alpha2, mbreak, mmin, mmax, delta):
+    return broken_powerlaw(m, alpha1, alpha2, mbreak, mmin, mmax)*smoothing(m, mmin, delta)
+
+
+@njit
+def broken_powerlaw_smoothed(m, alpha1, alpha2, mbreak, mmin, mmax, delta):
+    x  = np.linspace(mmin, mmax, 1000)
+    dx = x[1]-x[0]
+    n  = np.sum(_broken_powerlaw_smoothed_unnorm(x, alpha1, alpha2, mbreak, mmin, mmax, delta)*dx)
+    return _broken_powerlaw_smoothed_unnorm(m.flatten(), alpha1, alpha2, mbreak, mmin, mmax, delta)/n
 
 @njit
 def _powerlaw_smoothed_unnorm(m, alpha, mmax, mmin, delta):
@@ -87,7 +106,7 @@ def _powerlaw_massratio(q, m1, beta, mmin, delta):
 
 @njit
 def powerlaw_massratio(q, m1, beta, mmin, delta):
-    return _powerlaw_massratio_unnorm(q, m1, beta, mmin, delta).flatten()
+    return _powerlaw_massratio(q, m1, beta, mmin, delta).flatten()
 
 # LVK
 @njit
