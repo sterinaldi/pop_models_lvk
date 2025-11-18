@@ -10,6 +10,7 @@ def smoothing(m, mmin, delta):
     exponent     = 1. / shifted_mass - 1. / (1. - shifted_mass)
     p       = 1./(1.+np.exp(exponent))*idx
     p[m >= mmin + delta] = 1.
+    p[m<mmin] = 1e-10
     return p
 
 @njit
@@ -17,7 +18,7 @@ def smoothing_float(m, mmin, delta):
     if m > mmin + delta:
         p = 1.
     elif m < mmin:
-        p = 0.
+        p = 1e-10
     else:
         shifted_mass = (m - mmin) / delta
         exponent     = 1. / shifted_mass - 1. / (1. - shifted_mass)
@@ -27,7 +28,7 @@ def smoothing_float(m, mmin, delta):
 # Primary mass
 @njit
 def powerlaw_truncated(m, alpha, mmin, mmax):
-    p = np.where((m < mmin) | (m > mmax), 1e-7, m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha)))
+    p = np.where((m < mmin) | (m > mmax), 1e-10, m**-alpha * (alpha-1.)/(mmin**(1.-alpha)-mmax**(1.-alpha)))
     return p
 
 @njit
@@ -63,7 +64,7 @@ def powerlaw_smoothed(m, alpha, mmax, mmin, delta):
 @njit
 def peak(m, mu, sigma, mmin, mmax = 100.):
     p = np.exp(-0.5*(m-mu)**2/sigma**2)/(np.sqrt(2*np.pi)*sigma)
-    p[(m < mmin) | (m > mmax)] = 0.
+    p[(m < mmin) | (m > mmax)] = 1e-20
     return p/(erf((mmax-mu)/(sigma*np.sqrt(2))) - erf((mmin-mu)/(sigma*np.sqrt(2))))*2.
 
 @njit
@@ -111,7 +112,7 @@ def powerlaw_massratio(q, m1, beta, mmin, delta):
 # LVK
 @njit
 def _plpeak_lvk_unnorm(m, alpha, mmin, mmax, delta, mu, sigma, weight):
-    return ((1.-weight)*powerlaw_truncated(m, alpha, mmin, mmax) + weight*peak(m, mu, sigma, mmin))*smoothing(m, mmin, delta)
+    return ((1.-weight)*powerlaw_truncated(m, alpha, mmin, mmax) + weight*peak(m, mu, sigma, mmin, mmax))*smoothing(m, mmin, delta)
 
 @njit
 def _plpeak_lvk_np2p(m, alpha, mmin, mmax, delta, mu, sigma, log10_w):
