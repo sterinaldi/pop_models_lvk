@@ -33,10 +33,10 @@ def powerlaw_truncated(m, alpha, mmin, mmax):
 
 @njit
 def broken_powerlaw(m, alpha1, alpha2, mbreak, mmin, mmax):
-    nn = (mmax*(mmax/mbreak)**(-alpha2) - mbreak)/(1-alpha2) + (mmax*(mmax/mbreak)**(-alpha1) - mbreak)/(1-alpha1)
-#    p  = np.where((m < mmin) | (m > mmax), 1e-7, np.where(m < mbreak, (m/mbreak)**(-alpha1), (m/mbreak)**(-alpha2)))
+    nn = mbreak * ((1-(mmin/mbreak)**(1-alpha1))/(1-alpha1) + ((mmax/mbreak)**(1-alpha2)-1)/(1-alpha2))
     p  = np.where(m < mbreak, (m/mbreak)**(-alpha1), (m/mbreak)**(-alpha2))
-    return p/nn
+    idx = (m > mmin) & (m < mmax)
+    return np.where(idx, p, 1e-10)/nn
 
 @njit
 def _broken_powerlaw_smoothed_unnorm(m, alpha1, alpha2, mbreak, mmin, mmax, delta):
@@ -85,6 +85,8 @@ def plpeak(m, alpha, mmin, mmax, delta, mu, sigma, weight):
 # mass ratio
 q_norm = np.linspace(0,1,1001)[1:]
 dq     = q_norm[1]-q_norm[0]
+m_norm = np.linspace(2,300,1000)
+dm     = m_norm[1]-m_norm[0]
 
 # Primary mass
 @njit
@@ -117,6 +119,19 @@ def _plpeak_lvk_unnorm(m, alpha, mmin, mmax, delta, mu, sigma, weight):
 @njit
 def _plpeak_lvk_np2p(m, alpha, mmin, mmax, delta, mu, sigma, log10_w):
     return ((1.- (10**log10_w))*powerlaw_truncated(m, alpha, mmin, mmax) + (10**log10_w)*peak(m, mu, sigma, mmin, 100.))*smoothing(m, mmin, delta)
+
+@njit
+def bpl2peak(m, alpha1, alpha2, mbreak, mu1, sigma1, mu2, sigma2, mmin, delta, w0, w1, mmax = 300):
+    norm = np.sum(_bpl2peak(m_norm, alpha1, alpha2, mbreak, mu1, sigma1, mu2, sigma2, mmin, delta, w0, w1, mmax))*dm
+    return _bpl2peak(m, alpha1, alpha2, mbreak, mu1, sigma1, mu2, sigma2, mmin, delta, w0, w1, mmax)/norm
+
+@njit
+def _bpl2peak(m, alpha1, alpha2, mbreak, mu1, sigma1, mu2, sigma2, mmin, delta, w0, w1, mmax = 300):
+    bpl = broken_powerlaw(m, alpha1, alpha2, mbreak, mmin, mmax)
+    p1  = peak(m, mu1, sigma1, mmin, mmax)
+    p2  = peak(m, mu2, sigma2, mmin, mmax)
+    s   = smoothing(m, mmin, delta)
+    return (w0 * bpl + w1*p1 + (1-w0-w1)*p2)*s
 
 # LVK
 @njit
