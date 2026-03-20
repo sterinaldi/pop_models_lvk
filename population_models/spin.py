@@ -24,7 +24,7 @@ def joint_spin_tilt_angles(cost1, cost2, mu, sigma, zeta):
     return zeta*truncated_gaussian(cost1, mu, sigma, -1., 1.)*truncated_gaussian(cost2, mu, sigma, -1, 1.) + (1-zeta)/4.
 
 @njit
-def joint_spin_tilt_angles(cost, mu, sigma, zeta):
+def spin_tilt_angle(cost, mu, sigma, zeta):
     return zeta*truncated_gaussian(cost, mu, sigma, -1., 1.) + (1-zeta)/2.
 
 @njit
